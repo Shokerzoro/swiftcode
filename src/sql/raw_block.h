@@ -125,6 +125,12 @@ private:
         return instruction;
     }
 
+    static std::string make_version_marker(RawSqlInstruction const& instruction) {
+        return "-- CodeGen: " + instruction.name + " version " +
+               std::to_string(instruction.version) +
+               ". Need update (yes/no): no";
+    }
+
     void read_source() {
         std::ifstream input{infile};
         if (!input) {
@@ -158,9 +164,7 @@ private:
             if (instruction.need_update) {
                 has_updates = true;
                 instruction.version += 1;
-                source_lines[index] = "-- CodeGen: " + instruction.name + " version " +
-                                      std::to_string(instruction.version) +
-                                      ". Need update (yes/no): no";
+                source_lines[index] = make_version_marker(instruction);
             }
 
             instructions.push_back(instruction);
