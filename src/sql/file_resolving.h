@@ -2,15 +2,20 @@
 // Created by zver on 30.04.2026.
 //
 
-#ifndef CODEGEN_FILE_RESOLVER_H
-#define CODEGEN_FILE_RESOLVER_H
+#ifndef SWIFTCODE_SQL_FILE_RESOLVING_H
+#define SWIFTCODE_SQL_FILE_RESOLVING_H
+
+#include <filesystem>
+#include <utility>
+#include <vector>
 
 namespace sql {
 
-    // Here should be function declaration for files resolving
-    // Get all .sql files, get or create mirror named .h files in output dir
-    // Gets map with paths by reference
+using FilePair = std::pair<std::filesystem::path, std::filesystem::path>;
+
+std::vector<FilePair> resolve_sql_files(std::filesystem::path const& input,
+                                        std::filesystem::path const& output);
 
 } // namespace sql
 
-#endif //CODEGEN_FILE_RESOLVER_H
+#endif // SWIFTCODE_SQL_FILE_RESOLVING_H

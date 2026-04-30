@@ -1,27 +1,49 @@
+#include "sql/sql_pipeline.h"
 
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
+#include <string>
+
+namespace {
+
+void print_usage(char const* executable) {
+    std::cerr << "Usage:\n"
+              << "  " << executable << " -sql <raw_sql_dir> <gen_sql_dir>\n"
+              << "  " << executable << " -enum <source_dir>\n";
+}
+
+} // namespace
 
 int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        print_usage(argv[0]);
+        return 1;
+    }
 
-    // Command line parsing
-	// First arg should be -enum / -sql
+    try {
+        std::string const mode{argv[1]};
 
-	// if -enum require one arg with directory path
-	try {
-		// Calls enum::process_enums()
-	}
-	catch (std::exception& e) {
-		std::cerr << "CodeGen during enum exeption: " << e.what() << std::endl;
-	}
+        if (mode == "-sql") {
+            if (argc != 4) {
+                print_usage(argv[0]);
+                return 1;
+            }
 
-	// if -sql require require two args with input and output dir
-	try {
-		// Calls sql::process_sql()
-	}
-	catch (std::exception& e) {
-		std::cerr << "CodeGen during sql exeption: " << e.what() << std::endl;
-	}
+            sql::process_sql(std::filesystem::path{argv[2]},
+                             std::filesystem::path{argv[3]});
+            return 0;
+        }
 
-    return 0;
+        if (mode == "-enum") {
+            std::cerr << "Enum generation is not implemented yet.\n";
+            return 2;
+        }
+
+        print_usage(argv[0]);
+        return 1;
+    } catch (std::exception const& e) {
+        std::cerr << "SwiftCode error: " << e.what() << '\n';
+        return 1;
+    }
 }

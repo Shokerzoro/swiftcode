@@ -1,39 +1,123 @@
-//
-// Created by zver on 30.04.2026.
-//
+#ifndef SWIFTCODE_SQL_OUTPUT_BLOCK_H
+#define SWIFTCODE_SQL_OUTPUT_BLOCK_H
 
-#ifndef CODEGEN_OutBlock_H
-#define CODEGEN_OutBlock_H
+#include "mid_block.h"
 
-#include <string>
+#include <filesystem>
 #include <fstream>
-#include "mid_view.h"
+#include <stdexcept>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace sql {
 
-    // Class for output
-    class OutBlock {
-    public:
-        OutBlock(MidBlock& mid) : outfile(mid.outfile), version{mid.version++} {
-            // Turnes midblock into strings
+class OutBlock {
+public:
+    explicit OutBlock(MidBlock const& mid)
+        : outfile{mid.outfile}, instructions{mid.instructions} {}
+
+    void update() const {
+        auto content = read_existing_header();
+        remove_replaced_blocks(content);
+
+        if (content.empty()) {
+            content.push_back("#pragma once");
+            content.push_back("");
+            content.push_back("namespace sql {");
+        } else if (!content.empty() && trim_copy(content.back()) == "} // namespace sql") {
+            content.pop_back();
         }
 
-        // And knows how to be emplaced in filestram
-        void update() {
-            // Look for named block with same name and replaces it
+        for (auto const& instruction : instructions) {
+            if (!content.empty() && !content.back().empty()) {
+                content.push_back("");
+            }
 
-            // If no such block found adds it
+            content.push_back("// CodeGen from " + instruction.name + " version " +
+                              std::to_string(instruction.version) + ".");
+            content.push_back("static constexpr const char* " + instruction.name + " = R\"SQL(");
+            for (auto const& line : instruction.generated_lines) {
+                content.push_back(line);
+            }
+            content.push_back(")SQL\";");
         }
-    private:
-        // Main data
-        std::filesystem::path outfile;
-        std::string name;
-        int version;
 
-        // Raw data
-        std::list<std::string> outputstrings; // Ready to input in file static constexpr const char* {NAME} = R" ... " /n R" ... " /n ... /n R" ...";
-    };
+        content.push_back("");
+        content.push_back("} // namespace sql");
+
+        std::ofstream output{outfile, std::ios::trunc};
+        if (!output) {
+            throw std::runtime_error("Cannot update generated SQL header: " + outfile.string());
+        }
+
+        for (auto const& line : content) {
+            output << line << '\n';
+        }
+    }
+
+private:
+    std::vector<std::string> read_existing_header() const {
+        std::vector<std::string> content;
+        std::ifstream input{outfile};
+        if (!input) {
+            return content;
+        }
+
+        std::string line;
+        while (std::getline(input, line)) {
+            content.push_back(line);
+        }
+
+        return content;
+    }
+
+    void remove_replaced_blocks(std::vector<std::string>& content) const {
+        std::unordered_set<std::string> names;
+        for (auto const& instruction : instructions) {
+            names.insert(instruction.name);
+        }
+
+        std::vector<std::string> filtered;
+        for (std::size_t index = 0; index < content.size();) {
+            auto line = trim_copy(content[index]);
+            std::string const prefix = "// CodeGen from ";
+            if (!starts_with(line, prefix)) {
+                filtered.push_back(content[index]);
+                ++index;
+                continue;
+            }
+
+            auto rest = line.substr(prefix.size());
+            auto version_pos = rest.find(" version ");
+            auto block_name = version_pos == std::string::npos ? rest : rest.substr(0, version_pos);
+            if (names.find(block_name) == names.end()) {
+                filtered.push_back(content[index]);
+                ++index;
+                continue;
+            }
+
+            ++index;
+            while (index < content.size() && trim_copy(content[index]) != ")SQL\";") {
+                ++index;
+            }
+            if (index < content.size()) {
+                ++index;
+            }
+        }
+
+        while (!filtered.empty() && filtered.back().empty()) {
+            filtered.pop_back();
+        }
+
+        content = std::move(filtered);
+    }
+
+    std::filesystem::path outfile;
+    std::vector<MidSqlInstruction> instructions;
+};
 
 } // namespace sql
 
-#endif //CODEGEN_OutBlock_H
+#endif // SWIFTCODE_SQL_OUTPUT_BLOCK_H

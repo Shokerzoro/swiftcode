@@ -2,13 +2,13 @@
 // Created by zver on 30.04.2026.
 //
 
-#ifndef CODEGEN_ENUM_PIPLINE_H
-#define CODEGEN_ENUM_PIPLINE_H
+#ifndef SWIFTCODE_ENUM_PIPELINE_H
+#define SWIFTCODE_ENUM_PIPELINE_H
 
-namespace enum {
+namespace enum_pipeline {
 
 
 
-} // namespace enum
+} // namespace enum_pipeline
 
-#endif //CODEGEN_ENUM_PIPLINE_H
+#endif // SWIFTCODE_ENUM_PIPELINE_H
