@@ -1,0 +1,9 @@
+/.idea/
+/cmake-build-*/
+/build/
+/out/
+/dist/
+
+*.user
+*.suo
+*.vcxproj.user
