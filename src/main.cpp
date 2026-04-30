@@ -1,3 +1,4 @@
+#include "enum/enum_pipline.h"
 #include "sql/sql_pipeline.h"
 
 #include <filesystem>
@@ -36,8 +37,13 @@ int main(int argc, char* argv[]) {
         }
 
         if (mode == "-enum") {
-            std::cerr << "Enum generation is not implemented yet.\n";
-            return 2;
+            if (argc != 3) {
+                print_usage(argv[0]);
+                return 1;
+            }
+
+            enum_pipeline::process_enums(std::filesystem::path{argv[2]});
+            return 0;
         }
 
         print_usage(argv[0]);

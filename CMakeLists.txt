@@ -7,6 +7,11 @@ add_executable(swiftcode
         src/main.cpp
         src/sql/sql_pipeline.h
         src/enum/enum_pipline.h
+        src/enum/file_resolving.h
+        src/enum/files_resolving.cpp
+        src/enum/raw_block.h
+        src/enum/mid_block.h
+        src/enum/output_block.h
         src/sql/raw_block.h
         src/sql/output_block.h
         src/sql/mid_block.h
