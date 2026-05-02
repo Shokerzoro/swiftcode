@@ -18,6 +18,10 @@ public:
     explicit OutBlock(MidBlock const& mid)
         : outfile{mid.outfile}, instructions{mid.instructions} {}
 
+    explicit operator bool() const noexcept {
+        return !instructions.empty();
+    }
+
     void update() const {
         auto content = read_existing_header();
         remove_replaced_blocks(content);

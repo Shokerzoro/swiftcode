@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -19,6 +20,22 @@ public:
     explicit OutBlock(MidBlock const& mid)
         : infile{mid.infile}, source_lines{mid.source_lines}, instructions{mid.instructions} {}
 
+    explicit operator bool() const noexcept {
+        return !instructions.empty();
+    }
+
+    void update() const {
+        std::ofstream output{infile, std::ios::trunc};
+        if (!output) {
+            throw std::runtime_error("Cannot update enum source file: " + infile.string());
+        }
+
+        for (auto const& line : updated_source()) {
+            output << line << '\n';
+        }
+    }
+
+private:
     std::vector<std::string> updated_source() const {
         auto content = source_lines;
         remove_replaced_blocks(content);
@@ -57,7 +74,6 @@ public:
         throw std::runtime_error("Cannot find enum class for generated array: " + enum_name);
     }
 
-private:
     static std::vector<std::string> make_generated_block(MidEnumInstruction const& instruction) {
         std::vector<std::string> block;
         block.push_back("");
@@ -95,10 +111,6 @@ private:
             auto rest = line.substr(prefix.size());
             auto version_pos = rest.find(" version ");
             auto block_name = version_pos == std::string::npos ? rest : rest.substr(0, version_pos);
-            auto domain_pos = block_name.find(" domain ");
-            if (domain_pos != std::string::npos) {
-                block_name = block_name.substr(0, domain_pos);
-            }
             if (names.find(block_name) == names.end()) {
                 filtered.push_back(content[index]);
                 ++index;

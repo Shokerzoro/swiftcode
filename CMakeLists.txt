@@ -6,13 +6,18 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(swiftcode
         src/main.cpp
         src/sql/sql_pipeline.h
+        src/domain/domain_pipeline.h
+        src/domain/file_resolving.h
+        src/domain/files_resolving.cpp
+        src/domain/raw_block.h
+        src/domain/mid_block.h
+        src/domain/output_block.h
         src/enum/enum_pipline.h
         src/enum/file_resolving.h
         src/enum/files_resolving.cpp
         src/enum/raw_block.h
         src/enum/mid_block.h
         src/enum/output_block.h
-        src/enum/domain_sql_block.h
         src/sql/raw_block.h
         src/sql/output_block.h
         src/sql/mid_block.h

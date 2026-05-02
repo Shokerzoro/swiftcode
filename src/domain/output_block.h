@@ -1,7 +1,9 @@
-#ifndef SWIFTCODE_ENUM_DOMAIN_SQL_BLOCK_H
-#define SWIFTCODE_ENUM_DOMAIN_SQL_BLOCK_H
+#ifndef SWIFTCODE_DOMAIN_OUTPUT_BLOCK_H
+#define SWIFTCODE_DOMAIN_OUTPUT_BLOCK_H
 
 #include "mid_block.h"
+
+#include "../enum/raw_block.h"
 
 #include <algorithm>
 #include <cctype>
@@ -15,28 +17,30 @@
 #include <utility>
 #include <vector>
 
-namespace enum_pipeline {
+namespace domain {
 
-struct DomainSqlValue {
-    std::string id;
-    std::string text;
-};
-
-struct DomainSqlInstruction {
+struct OutputDomainInstruction {
     std::filesystem::path output_file;
     std::string table_name;
-    std::vector<DomainSqlValue> values;
+    std::vector<MidDomainValue> values;
 };
 
-class DomainSqlBlock {
+class OutBlock {
 public:
-    DomainSqlBlock(std::filesystem::path contract_root,
-                   std::filesystem::path database_root,
-                   std::vector<MidBlock> const& mids)
-        : contract_root{std::move(contract_root)}, database_root{std::move(database_root)} {
+    explicit OutBlock(std::vector<MidBlock> const& mids) {
+        std::map<std::string, OutputDomainInstruction> grouped;
         for (auto const& mid : mids) {
-            collect(mid);
+            for (auto const& instruction : mid.instructions) {
+                auto key = instruction.output_file.string() + "|" + instruction.table_name;
+                auto& output = grouped[key];
+                if (output.table_name.empty()) {
+                    output.output_file = instruction.output_file;
+                    output.table_name = instruction.table_name;
+                }
+                output.values.insert(output.values.end(), instruction.values.begin(), instruction.values.end());
+            }
         }
+
         for (auto& [key, instruction] : grouped) {
             (void)key;
             instructions.push_back(std::move(instruction));
@@ -48,14 +52,14 @@ public:
     }
 
     void update() const {
-        std::map<std::filesystem::path, std::vector<DomainSqlInstruction>> by_file;
+        std::map<std::filesystem::path, std::vector<OutputDomainInstruction>> by_file;
         for (auto const& instruction : instructions) {
             by_file[instruction.output_file].push_back(instruction);
         }
 
         for (auto& [file, file_instructions] : by_file) {
             std::sort(file_instructions.begin(), file_instructions.end(),
-                      [](DomainSqlInstruction const& left, DomainSqlInstruction const& right) {
+                      [](OutputDomainInstruction const& left, OutputDomainInstruction const& right) {
                           return left.table_name < right.table_name;
                       });
             update_file(file, file_instructions);
@@ -68,6 +72,14 @@ private:
         int version{0};
         std::vector<std::string> sql_lines;
     };
+
+    static std::string trim_copy(std::string value) {
+        return enum_pipeline::trim_copy(std::move(value));
+    }
+
+    static bool starts_with(std::string const& value, std::string const& prefix) {
+        return enum_pipeline::starts_with(value, prefix);
+    }
 
     static std::string to_upper_identifier(std::string value) {
         for (auto& ch : value) {
@@ -159,7 +171,7 @@ private:
         return std::stoi(after_version.substr(0, dot_pos));
     }
 
-    static std::vector<std::string> make_create_sql(DomainSqlInstruction const& instruction) {
+    static std::vector<std::string> make_create_sql(OutputDomainInstruction const& instruction) {
         return {
             "CREATE TABLE IF NOT EXISTS " + instruction.table_name + " (",
             "    id   INTEGER PRIMARY KEY,",
@@ -168,7 +180,7 @@ private:
         };
     }
 
-    static std::vector<std::string> make_fill_sql(DomainSqlInstruction const& instruction) {
+    static std::vector<std::string> make_fill_sql(OutputDomainInstruction const& instruction) {
         std::vector<std::string> lines;
         lines.push_back("INSERT OR IGNORE INTO " + instruction.table_name + " (id, enum) VALUES");
         for (std::size_t index = 0; index < instruction.values.size(); ++index) {
@@ -268,40 +280,8 @@ private:
         content = std::move(filtered);
     }
 
-    void collect(MidBlock const& mid) {
-        for (auto const& enum_instruction : mid.instructions) {
-            if (!enum_instruction.has_domain()) {
-                continue;
-            }
-
-            auto output_file = domain_file_for(mid.infile);
-            auto key = output_file.string() + "|" + enum_instruction.domain_table;
-            auto& domain = grouped[key];
-            if (domain.table_name.empty()) {
-                domain.output_file = std::move(output_file);
-                domain.table_name = enum_instruction.domain_table;
-            }
-            for (auto const& value : enum_instruction.values) {
-                domain.values.push_back(DomainSqlValue{value.sql_id, value.text});
-            }
-        }
-    }
-
-    std::filesystem::path domain_file_for(std::filesystem::path const& source_file) const {
-        auto relative = std::filesystem::relative(source_file, contract_root);
-        std::string subsystem = "common";
-        if (relative.has_parent_path()) {
-            auto first = *relative.begin();
-            if (first != relative.filename()) {
-                subsystem = first.string();
-            }
-        }
-
-        return database_root / subsystem / ("raw_sql_" + subsystem) / "domains.sql";
-    }
-
-    void update_file(std::filesystem::path const& file,
-                     std::vector<DomainSqlInstruction> const& file_instructions) const {
+    static void update_file(std::filesystem::path const& file,
+                            std::vector<OutputDomainInstruction> const& file_instructions) {
         auto content = read_lines(file);
 
         std::unordered_map<std::string, ExistingBlock> existing;
@@ -348,12 +328,9 @@ private:
         }
     }
 
-    std::filesystem::path contract_root;
-    std::filesystem::path database_root;
-    std::map<std::string, DomainSqlInstruction> grouped;
-    std::vector<DomainSqlInstruction> instructions;
+    std::vector<OutputDomainInstruction> instructions;
 };
 
-} // namespace enum_pipeline
+} // namespace domain
 
-#endif // SWIFTCODE_ENUM_DOMAIN_SQL_BLOCK_H
+#endif // SWIFTCODE_DOMAIN_OUTPUT_BLOCK_H

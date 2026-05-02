@@ -5,7 +5,6 @@
 #include "raw_block.h"
 #include "mid_block.h"
 #include "output_block.h"
-#include "domain_sql_block.h"
 
 #include <filesystem>
 #include <utility>
@@ -14,40 +13,38 @@
 namespace enum_pipeline {
 
 inline void process_enums(std::filesystem::path const& input) {
-    auto files = resolve_enum_files(input);
+    std::vector<std::filesystem::path> iofiles = resolve_enum_files(input);
 
-    for (auto const& file : files) {
+    std::vector<RawBlock> raw_blocks;
+    for (auto const& file : iofiles) {
         RawBlock raw{file};
-        if (!raw) {
-            continue;
+        if (raw) {
+            raw_blocks.push_back(std::move(raw));
         }
+    }
 
+    std::vector<MidBlock> mid_blocks;
+    for (auto const& raw : raw_blocks) {
         MidBlock mid{raw};
-        if (!mid) {
-            continue;
-        }
-
-        OutBlock out{mid};
-        raw.update_source(out.updated_source());
-    }
-}
-
-inline void process_enum_domains(std::filesystem::path const& contract,
-                                 std::filesystem::path const& database) {
-    auto files = resolve_enum_files(contract);
-    std::vector<MidBlock> processed_mids;
-
-    for (auto const& file : files) {
-        RawBlock raw{file};
-        MidBlock mid{raw, true};
         if (mid) {
-            processed_mids.push_back(std::move(mid));
+            mid_blocks.push_back(std::move(mid));
         }
     }
 
-    DomainSqlBlock domains{contract, database, processed_mids};
-    if (domains) {
-        domains.update();
+    std::vector<OutBlock> out_blocks;
+    for (auto const& mid : mid_blocks) {
+        OutBlock out{mid};
+        if (out) {
+            out_blocks.push_back(std::move(out));
+        }
+    }
+
+    for (auto const& block : out_blocks) {
+        block.update();
+    }
+
+    for (auto const& block : raw_blocks) {
+        block.update();
     }
 }
 

@@ -1,3 +1,4 @@
+#include "domain/domain_pipeline.h"
 #include "enum/enum_pipline.h"
 #include "sql/sql_pipeline.h"
 
@@ -53,8 +54,8 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
 
-            enum_pipeline::process_enum_domains(std::filesystem::path{argv[2]},
-                                                std::filesystem::path{argv[3]});
+            domain::process_domains(std::filesystem::path{argv[2]},
+                                    std::filesystem::path{argv[3]});
             return 0;
         }
 

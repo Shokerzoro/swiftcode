@@ -1,9 +1,5 @@
-//
-// Created by zver on 30.04.2026.
-//
-
-#ifndef SWIFTCODE_SQL_PIPELINE_H
-#define SWIFTCODE_SQL_PIPELINE_H
+#ifndef SWIFTCODE_DOMAIN_PIPELINE_H
+#define SWIFTCODE_DOMAIN_PIPELINE_H
 
 #include "file_resolving.h"
 #include "raw_block.h"
@@ -14,11 +10,11 @@
 #include <utility>
 #include <vector>
 
-namespace sql {
+namespace domain {
 
-inline void process_sql(std::filesystem::path const& input,
-                        std::filesystem::path const& output) {
-    std::vector<FilePair> iofiles = resolve_sql_files(input, output);
+inline void process_domains(std::filesystem::path const& input,
+                            std::filesystem::path const& output) {
+    std::vector<FilePair> iofiles = resolve_domain_files(input, output);
 
     std::vector<RawBlock> raw_blocks;
     for (auto const& file : iofiles) {
@@ -37,8 +33,8 @@ inline void process_sql(std::filesystem::path const& input,
     }
 
     std::vector<OutBlock> out_blocks;
-    for (auto const& mid : mid_blocks) {
-        OutBlock out{mid};
+    if (!mid_blocks.empty()) {
+        OutBlock out{mid_blocks};
         if (out) {
             out_blocks.push_back(std::move(out));
         }
@@ -53,6 +49,6 @@ inline void process_sql(std::filesystem::path const& input,
     }
 }
 
-} // namespace sql
+} // namespace domain
 
-#endif // SWIFTCODE_SQL_PIPELINE_H
+#endif // SWIFTCODE_DOMAIN_PIPELINE_H

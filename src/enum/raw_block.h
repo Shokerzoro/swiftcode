@@ -10,6 +10,10 @@
 #include <utility>
 #include <vector>
 
+namespace domain {
+class RawBlock;
+} // namespace domain
+
 namespace enum_pipeline {
 
 struct RawEnumValue {
@@ -64,6 +68,13 @@ public:
         return has_updates;
     }
 
+    void update() const {}
+
+private:
+    friend class MidBlock;
+    friend class OutBlock;
+    friend class domain::RawBlock;
+
     void update_source(std::vector<std::string> updated_lines) const {
         std::ofstream output{infile, std::ios::trunc};
         if (!output) {
@@ -74,10 +85,6 @@ public:
             output << line << '\n';
         }
     }
-
-private:
-    friend class MidBlock;
-    friend class OutBlock;
 
     static bool is_codegen_marker(std::string const& line) {
         auto trimmed = trim_copy(line);
