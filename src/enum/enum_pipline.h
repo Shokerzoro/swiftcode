@@ -5,8 +5,11 @@
 #include "raw_block.h"
 #include "mid_block.h"
 #include "output_block.h"
+#include "domain_sql_block.h"
 
 #include <filesystem>
+#include <utility>
+#include <vector>
 
 namespace enum_pipeline {
 
@@ -26,6 +29,25 @@ inline void process_enums(std::filesystem::path const& input) {
 
         OutBlock out{mid};
         raw.update_source(out.updated_source());
+    }
+}
+
+inline void process_enum_domains(std::filesystem::path const& contract,
+                                 std::filesystem::path const& database) {
+    auto files = resolve_enum_files(contract);
+    std::vector<MidBlock> processed_mids;
+
+    for (auto const& file : files) {
+        RawBlock raw{file};
+        MidBlock mid{raw, true};
+        if (mid) {
+            processed_mids.push_back(std::move(mid));
+        }
+    }
+
+    DomainSqlBlock domains{contract, database, processed_mids};
+    if (domains) {
+        domains.update();
     }
 }
 

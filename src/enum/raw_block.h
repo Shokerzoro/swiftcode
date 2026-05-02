@@ -20,11 +20,16 @@ struct RawEnumValue {
 struct RawEnumInstruction {
     std::string array_name;
     std::string enum_name;
+    std::string domain_table;
     int version{0};
     bool need_update{false};
     std::size_t marker_line{0};
     std::size_t enum_end_line{0};
     std::vector<RawEnumValue> values;
+
+    bool has_domain() const noexcept {
+        return !domain_table.empty();
+    }
 };
 
 inline std::string trim_copy(std::string value) {
@@ -111,6 +116,19 @@ private:
         return name;
     }
 
+    static void parse_instruction_target(std::string const& target,
+                                         RawEnumInstruction& instruction) {
+        auto cleaned = trim_copy(target);
+        auto domain_pos = cleaned.find(" domain ");
+        if (domain_pos == std::string::npos) {
+            instruction.array_name = cleaned;
+            return;
+        }
+
+        instruction.array_name = trim_copy(cleaned.substr(0, domain_pos));
+        instruction.domain_table = trim_copy(cleaned.substr(domain_pos + std::string{" domain "}.size()));
+    }
+
     static RawEnumInstruction parse_marker(std::string const& marker, std::size_t line_index) {
         auto trimmed = trim_copy(marker);
         RawEnumInstruction instruction;
@@ -120,7 +138,7 @@ private:
         std::string const version_prefix = "// CodeGen: ";
 
         if (starts_with(trimmed, need_prefix)) {
-            instruction.array_name = parse_marker_name(trimmed);
+            parse_instruction_target(parse_marker_name(trimmed), instruction);
             instruction.need_update = true;
             return instruction;
         }
@@ -135,7 +153,7 @@ private:
             throw std::runtime_error("Invalid CodeGen marker: " + marker);
         }
 
-        instruction.array_name = trim_copy(rest.substr(0, version_pos));
+        parse_instruction_target(rest.substr(0, version_pos), instruction);
         auto after_version = rest.substr(version_pos + std::string{" version "}.size());
         auto dot_pos = after_version.find('.');
         if (dot_pos == std::string::npos) {
@@ -276,7 +294,12 @@ private:
     }
 
     static std::string make_version_marker(RawEnumInstruction const& instruction) {
-        return "// CodeGen: " + instruction.array_name + " version " +
+        auto target = instruction.array_name;
+        if (instruction.has_domain()) {
+            target += " domain " + instruction.domain_table;
+        }
+
+        return "// CodeGen: " + target + " version " +
                std::to_string(instruction.version) +
                ". Need update (yes/no): no";
     }

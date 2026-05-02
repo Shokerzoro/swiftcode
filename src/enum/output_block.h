@@ -61,7 +61,7 @@ private:
     static std::vector<std::string> make_generated_block(MidEnumInstruction const& instruction) {
         std::vector<std::string> block;
         block.push_back("");
-        block.push_back("// CodeGen from " + instruction.array_name + " version " +
+        block.push_back("// CodeGen from " + instruction.enum_name + " version " +
                         std::to_string(instruction.version) + ".");
         block.push_back("inline std::array<std::pair<int, std::string>, " +
                         std::to_string(instruction.values.size()) + "> " +
@@ -79,6 +79,7 @@ private:
         std::unordered_set<std::string> names;
         for (auto const& instruction : instructions) {
             names.insert(instruction.array_name);
+            names.insert(instruction.enum_name);
         }
 
         std::vector<std::string> filtered;
@@ -94,6 +95,10 @@ private:
             auto rest = line.substr(prefix.size());
             auto version_pos = rest.find(" version ");
             auto block_name = version_pos == std::string::npos ? rest : rest.substr(0, version_pos);
+            auto domain_pos = block_name.find(" domain ");
+            if (domain_pos != std::string::npos) {
+                block_name = block_name.substr(0, domain_pos);
+            }
             if (names.find(block_name) == names.end()) {
                 filtered.push_back(content[index]);
                 ++index;

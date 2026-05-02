@@ -12,6 +12,7 @@ add_executable(swiftcode
         src/enum/raw_block.h
         src/enum/mid_block.h
         src/enum/output_block.h
+        src/enum/domain_sql_block.h
         src/sql/raw_block.h
         src/sql/output_block.h
         src/sql/mid_block.h

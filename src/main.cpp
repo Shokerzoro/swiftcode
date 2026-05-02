@@ -11,7 +11,8 @@ namespace {
 void print_usage(char const* executable) {
     std::cerr << "Usage:\n"
               << "  " << executable << " -sql <raw_sql_dir> <gen_sql_dir>\n"
-              << "  " << executable << " -enum <source_dir>\n";
+              << "  " << executable << " -enum <source_dir>\n"
+              << "  " << executable << " -enum-domain <contract_dir> <database_dir>\n";
 }
 
 } // namespace
@@ -43,6 +44,17 @@ int main(int argc, char* argv[]) {
             }
 
             enum_pipeline::process_enums(std::filesystem::path{argv[2]});
+            return 0;
+        }
+
+        if (mode == "-enum-domain") {
+            if (argc != 4) {
+                print_usage(argv[0]);
+                return 1;
+            }
+
+            enum_pipeline::process_enum_domains(std::filesystem::path{argv[2]},
+                                                std::filesystem::path{argv[3]});
             return 0;
         }
 

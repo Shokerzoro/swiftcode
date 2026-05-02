@@ -11,7 +11,7 @@ enum class ResourceType {
     Integration = 12,
 };
 
-// CodeGen from ResourceTypePairs version 1.
+// CodeGen from ResourceType version 1.
 inline std::array<std::pair<int, std::string>, 3> ResourceTypePairs = {{
     {static_cast<int>(ResourceType::Employees), "Employees"},
     {static_cast<int>(ResourceType::Production), "Production"},
