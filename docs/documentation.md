@@ -7,7 +7,7 @@ not run generation.
 ## Active command
 
 ```text
-swiftcode --verbose <inputdir> <outputdir>
+swiftcode --verbose <inputdir> <outputdir> [-qdebug]
 ```
 
 Scans C++ source files in `<inputdir>` and writes generated headers to
@@ -25,6 +25,7 @@ Main rules:
 - Change `no` to `yes` when the generated verbose code must be regenerated.
 - Generated code keeps the enum namespace and emits an enum name lookup array
   plus `std::ostream& operator<<`.
+- `-qdebug` additionally emits `QDebug operator<<` for generated enum classes.
 - Keep `<inputdir>` and `<outputdir>` different. The generator rejects output
   files that would overwrite input sources.
 

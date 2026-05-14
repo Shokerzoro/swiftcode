@@ -14,8 +14,11 @@ namespace verbose {
 
 class OutBlock {
 public:
-    explicit OutBlock(MidBlock const& mid)
-        : infile{mid.infile}, outfile{mid.outfile}, instructions{mid.instructions} {}
+    explicit OutBlock(MidBlock const& mid, bool qdebug_enabled = false)
+        : infile{mid.infile},
+          outfile{mid.outfile},
+          instructions{mid.instructions},
+          generate_qdebug{qdebug_enabled} {}
 
     explicit operator bool() const noexcept {
         return !instructions.empty();
@@ -27,6 +30,8 @@ public:
 
         if (content.empty()) {
             content = make_header_prefix();
+        } else if (generate_qdebug) {
+            ensure_include(content, "#include <QDebug>");
         }
 
         while (!content.empty() && content.back().empty()) {
@@ -35,7 +40,7 @@ public:
 
         for (auto const& instruction : instructions) {
             content.push_back("");
-            auto block = make_generated_block(instruction);
+            auto block = make_generated_block(instruction, generate_qdebug);
             content.insert(content.end(), block.begin(), block.end());
         }
 
@@ -71,6 +76,9 @@ private:
         content.push_back("#pragma once");
         content.push_back("");
         content.push_back("#include <array>");
+        if (generate_qdebug) {
+            content.push_back("#include <QDebug>");
+        }
         content.push_back("#include <ostream>");
         content.push_back("#include <string>");
         content.push_back("#include <utility>");
@@ -94,7 +102,8 @@ private:
         return include_path.generic_string();
     }
 
-    static std::vector<std::string> make_generated_block(MidVerboseInstruction const& instruction) {
+    static std::vector<std::string> make_generated_block(MidVerboseInstruction const& instruction,
+                                                         bool generate_qdebug) {
         std::vector<std::string> block;
         block.push_back("// Verbose from " + instruction.enum_name + " version " +
                         std::to_string(instruction.version) + ".");
@@ -120,6 +129,20 @@ private:
         block.push_back("    }");
         block.push_back("    return os << static_cast<int>(value);");
         block.push_back("}");
+        if (generate_qdebug) {
+            block.push_back("");
+            block.push_back("inline QDebug operator<<(QDebug dbg, " +
+                            instruction.enum_name + " value) {");
+            block.push_back("    for (auto const& item : " + instruction.array_name + ") {");
+            block.push_back("        if (item.second == static_cast<int>(value)) {");
+            block.push_back("            dbg << item.first.c_str();");
+            block.push_back("            return dbg;");
+            block.push_back("        }");
+            block.push_back("    }");
+            block.push_back("    dbg << static_cast<int>(value);");
+            block.push_back("    return dbg;");
+            block.push_back("}");
+        }
 
         for (auto iter = instruction.namespaces.rbegin();
              iter != instruction.namespaces.rend(); ++iter) {
@@ -172,9 +195,32 @@ private:
         content = std::move(filtered);
     }
 
+    static void ensure_include(std::vector<std::string>& content, std::string const& include_line) {
+        for (auto const& line : content) {
+            if (trim_copy(line) == include_line) {
+                return;
+            }
+        }
+
+        std::size_t insert_index = 0;
+        for (std::size_t index = 0; index < content.size(); ++index) {
+            auto const line = trim_copy(content[index]);
+            if (starts_with(line, "#include \"")) {
+                insert_index = index;
+                break;
+            }
+            if (starts_with(line, "#include ")) {
+                insert_index = index + 1;
+            }
+        }
+
+        content.insert(content.begin() + static_cast<std::ptrdiff_t>(insert_index), include_line);
+    }
+
     std::filesystem::path infile;
     std::filesystem::path outfile;
     std::vector<MidVerboseInstruction> instructions;
+    bool generate_qdebug{false};
 };
 
 } // namespace verbose

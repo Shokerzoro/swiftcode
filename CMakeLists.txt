@@ -14,6 +14,8 @@ add_executable(swiftcode
         ${ENUM_SOURCES}
         ${SQL_SOURCES}
         ${VERBOSE_SOURCES}
+        src/context.h
+        src/flags.h
 )
 
 

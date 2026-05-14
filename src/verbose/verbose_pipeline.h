@@ -1,20 +1,19 @@
 #ifndef SWIFTCODE_VERBOSE_PIPELINE_H
 #define SWIFTCODE_VERBOSE_PIPELINE_H
 
+#include "../flags.h"
 #include "file_resolving.h"
 #include "mid_block.h"
 #include "output_block.h"
 #include "raw_block.h"
 
-#include <filesystem>
 #include <utility>
 #include <vector>
 
 namespace verbose {
 
-inline void process_verbose(std::filesystem::path const& input,
-                            std::filesystem::path const& output) {
-    std::vector<FilePair> iofiles = resolve_verbose_files(input, output);
+inline void process_verbose(VerboseFlags const& flags) {
+    std::vector<FilePair> iofiles = resolve_verbose_files(flags.input_dir, flags.output_dir);
 
     std::vector<RawBlock> raw_blocks;
     for (auto const& file : iofiles) {
@@ -34,7 +33,7 @@ inline void process_verbose(std::filesystem::path const& input,
 
     std::vector<OutBlock> out_blocks;
     for (auto const& mid : mid_blocks) {
-        OutBlock out{mid};
+        OutBlock out{mid, flags.generate_qdebug};
         if (out) {
             out_blocks.push_back(std::move(out));
         }
