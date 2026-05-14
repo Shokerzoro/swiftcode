@@ -1,20 +1,20 @@
-#ifndef SWIFTCODE_DOMAIN_PIPELINE_H
-#define SWIFTCODE_DOMAIN_PIPELINE_H
+#ifndef SWIFTCODE_VERBOSE_PIPELINE_H
+#define SWIFTCODE_VERBOSE_PIPELINE_H
 
-#include "files_resolving.h"
-#include "raw_block.h"
+#include "file_resolving.h"
 #include "mid_block.h"
 #include "output_block.h"
+#include "raw_block.h"
 
 #include <filesystem>
 #include <utility>
 #include <vector>
 
-namespace domain {
+namespace verbose {
 
-inline void process_domains(std::filesystem::path const& input,
+inline void process_verbose(std::filesystem::path const& input,
                             std::filesystem::path const& output) {
-    std::vector<FilePair> iofiles = resolve_domain_files(input, output);
+    std::vector<FilePair> iofiles = resolve_verbose_files(input, output);
 
     std::vector<RawBlock> raw_blocks;
     for (auto const& file : iofiles) {
@@ -33,8 +33,8 @@ inline void process_domains(std::filesystem::path const& input,
     }
 
     std::vector<OutBlock> out_blocks;
-    if (!mid_blocks.empty()) {
-        OutBlock out{mid_blocks};
+    for (auto const& mid : mid_blocks) {
+        OutBlock out{mid};
         if (out) {
             out_blocks.push_back(std::move(out));
         }
@@ -49,6 +49,6 @@ inline void process_domains(std::filesystem::path const& input,
     }
 }
 
-} // namespace domain
+} // namespace verbose
 
-#endif // SWIFTCODE_DOMAIN_PIPELINE_H
+#endif // SWIFTCODE_VERBOSE_PIPELINE_H

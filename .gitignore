@@ -3,6 +3,8 @@
 /build/
 /out/
 /dist/
+testfiles
+deploy
 
 *.user
 *.suo
